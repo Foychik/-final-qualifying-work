@@ -1,0 +1,13 @@
+tracker_type: bytetrack
+
+conf_thres: 0.6
+
+# ByteTrack hyperparameters
+track_high_thresh: 0.99
+track_low_thresh: 0.5
+new_track_thresh: 0.7
+track_buffer: 30
+match_thresh: 0.8
+frame_rate: 30
+gmc: False
+fuse_score: True

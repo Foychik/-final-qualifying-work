@@ -1,0 +1,13 @@
+dataset/
+dataset/*
+__pycache__/
+.ipynb_checkpoints/
+.vscode/
+*.log
+*.mp4 *.avi *.mov
+*.pt 
+models/
+models/* 
+detection_module.ipynb
+raw/
+raw/*

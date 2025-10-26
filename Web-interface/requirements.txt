@@ -1,0 +1,8 @@
+streamlit
+ultralytics>=8.0.0
+opencv-python
+numpy
+Pillow
+moviepy
+PyYAML
+deep-sort-realtime

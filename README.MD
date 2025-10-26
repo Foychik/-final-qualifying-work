@@ -1,0 +1,93 @@
+# ВКР — Захват и сопровождение воздушной цели (CV + Tracking)
+
+**Цель работы.** Разработка и исследование программного решения для автоматического захвата и сопровождения воздушной цели на видео/потоке:
+
+-   анализ методов и подбор данных;
+-   выбор и обоснование алгоритмов;
+-   обучение модели детекции;
+-   тестирование трекинга (ByteTrack, Deep SORT);
+-   программная реализация с веб-интерфейсом (Streamlit).
+
+---
+
+## Репозиторий и структура
+
+-   `Web-interface/` — приложение Streamlit.
+    <p align="center"><img src="presentation/project_structer.png" width="85%"></p>
+
+-   `notebooks/` — эксперименты по обучению/валидации (очищенные от вывода).
+-   `trackers-config/` — конфиги трекеров (пороги, σ и т.п.).
+-   `results/`, `raw/`, `videotests/` — примеры и артефакты экспериментов.
+-   `models/` — **веса не хранятся в Git** (см. иллюстрацию структуры).
+    <p align="center"><img src="presentation/MODELS_folder.png" width="65%"></p>
+
+> Крупные датасеты и видео исключены `.gitignore`.
+
+---
+
+## Методология
+
+### Детекция (YOLO family)
+
+-   Одношаговый детектор (CNN-бэкбон + FPN + детекционные головы).
+-   Выход: \((x, y, w, h, p*\text{cls}, p*\text{obj})\).
+-   Пост-обработка: NMS Ultralytics.
+-   Метрики: mAP@{.5,.5:.95}.
+
+### Трекинг 1 — **ByteTrack**
+
+-   Идея: ассоциировать **и высоко-, и низкоскорные** детекции.
+-   Шаги:
+    1. high-score детекции -> сопоставление с треками по IoU (Венгерский алгоритм);
+    2. оставшиеся треки сопоставить с low-score детекциями;
+    3. обновить/создать/убить треки.
+-   Ключевые формулы:
+    -   **IoU**: \(\text{IoU}(A,B)=\frac{|A\cap B|}{|A\cup B|}\).
+    -   Стоимость для сопоставления: \(1-\text{IoU}\).
+
+### Трекинг 2 — **Deep SORT**
+
+-   Kalman Filter (линейная модель состояния bbox) + Hungarian.
+-   Визуальные признаки (ReID-эмбеддинги) -> косинусная схожесть.
+-   Комбинированная стоимость:
+    \[
+    \lambda \cdot d*\text{motion} + (1-\lambda)\cdot d*\text{appearance},
+    \quad d*\text{appearance}=1-\cos(\mathbf{z*\text{trk}},\mathbf{z\_\text{det}})
+    \]
+-   KF: предсказание/обновление \((\mathbf{x},\mathbf{P})\) стандартными уравнениями.
+
+### Схема раунда трекинга
+
+<p align="center"><img src="presentation/metrics.png" width="75%"></p>
+
+---
+
+## Результаты (итоговые)
+
+-   Детектор обучен на профильном датасете собранном из открытых истоников, подобраны пороги NMS/score (yaml конфигурационные файлы).
+-   Сравнение трекеров: ByteTrack против Deep SORT на видеотестах.
+-   Итоговые метрики сведены в таблицу:
+    <p align="center"><img src="presentation/metrics.png" width="85%"></p>
+
+---
+
+## Веб-интерфейс
+
+Интерфейс реализован на **Streamlit** (папка [`Web-interface`](./Web-interface)):
+
+-   загрузка видео;
+-   выбор трекера (ByteTrack / Deep SORT);
+-   визуализация bbox, ID треков, FPS/метрик;
+-   сохранение результата в формате gif для сокращения объема файла.
+
+<p align="center"><img src="presentation/interface_1.png" width="90%"></p>
+<p align="center"><img src="presentation/interface_2.png" width="90%"></p>
+<p align="center"><img src="presentation/interface_3_result.png" width="90%"></p>
+
+### Запуск локально
+
+```bash
+cd Web-interface
+pip install -r requirements.txt
+streamlit run app_l.py
+```
